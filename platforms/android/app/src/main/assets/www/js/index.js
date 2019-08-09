@@ -16,31 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 var app = {
     // Application Constructor
-    initialize: function() {
+    initialize: function () {
         document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
     },
 
     // deviceready Event Handler
     //
     // Bind any cordova events here. Common events are:
-    // 'pause', 'resume', etc.
-    onDeviceReady: function() {
-        this.receivedEvent('deviceready');
+    onDeviceReady: function () {
+        getData();
     },
-
-    // Update DOM on a Received Event
-    receivedEvent: function(id) {
-        var parentElement = document.getElementById(id);
-        var listeningElement = parentElement.querySelector('.listening');
-        var receivedElement = parentElement.querySelector('.received');
-
-        listeningElement.setAttribute('style', 'display:none;');
-        receivedElement.setAttribute('style', 'display:block;');
-
-        console.log('Received Event: ' + id);
-    }
 };
+
+var flData = new Array();
+
+getData = function () {
+    var url = 'https://raw.githubusercontent.com/e9t/nsmc/master/ratings_test.txt';
+    $.ajax({
+        type: "GET",
+        url: url,
+        success: function (response) {
+            response = response.split('\n');
+            response.shift();
+            response.forEach(function (line) {
+                line = line.split('\t');
+                flData.push({ id: line[0], document: line[1], label: line[2] });
+            });
+            console.log('suc get data');
+        }
+    });
+}
 
 app.initialize();
