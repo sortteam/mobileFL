@@ -19,12 +19,12 @@
 
 
 var localStorageKey = {
-    flData:'flData',
+    flData: 'flData',
     labeledData: 'labeledData'
 }
 
 getObjectFromLocalStorage = function (key) {
-    return  JSON.parse(localStorage.getItem(key));
+    return JSON.parse(localStorage.getItem(key));
 }
 
 setObjectToLocalStorage = function (key, value) {
@@ -44,7 +44,7 @@ var app = {
             flData = {};
             getData();
         } else {
-            drawList();
+            makePagination();
         }
     },
 
@@ -63,37 +63,51 @@ getData = function () {
         success: function (response) {
             response = response.split('\n');
             response.shift();
-            response = response.splice(0, 100);
-            var flData = {};
+            // response = response.splice(0, 100);
+            var flData = new Array();
             response.forEach(function (line) {
                 line = line.split('\t');
-                flData[line[0]] = { document: line[1], label: line[2] };
-                // flData.push({ id: line[0], document: line[1], label: line[2] });
+                // flData[line[0]] = { document: line[1], label: line[2] };
+                flData.push({ id: line[0], document: line[1], label: line[2] });
             });
             setObjectToLocalStorage(localStorageKey.flData, flData);
-            drawList();
+            makePagination();
         }
     });
 }
 
-drawList = function () {
-    var flData = getObjectFromLocalStorage(localStorageKey.flData);
-    for (var key in flData) {
+function simpleTemplating(data) {
+    $('#data-container').html('');
+    var labeledData =  getObjectFromLocalStorage(localStorageKey.labeledData);
+    for (var i in data) {
         var liElement = document.createElement("li");
         var likeBtn = document.createElement("button");
         var dislikeBtn = document.createElement("button");
 
-        $(liElement).attr("key", key);
-        $(liElement).html(flData[key].document);
+        $(liElement).attr("key", data[i].id);
+        $(liElement).html(data[i].document);
         $(likeBtn).html("like");
         $(likeBtn).click(clickedLike);
         $(dislikeBtn).html("dislike");
         $(dislikeBtn).click(clickedDislike);
 
-        $(liElement).append(likeBtn);
-        $(liElement).append(dislikeBtn);
-        $("#list").append(liElement);
+        if (!labeledData[data[i].id]) {
+            $(liElement).append(likeBtn);
+            $(liElement).append(dislikeBtn);   
+        }
+
+        $("#data-container").append(liElement);
     }
+}
+
+makePagination = function () {
+    $('#pagination-container').pagination({
+        dataSource: getObjectFromLocalStorage(localStorageKey.flData),
+        pageSize: 20,
+        callback: function (data, pagination) {
+            simpleTemplating(data);
+        }
+    });
 }
 
 clickedLike = function (e) {
@@ -109,12 +123,17 @@ clickedReview = function (e, isLike) {
     var key = $(e.target).parent().attr("key");
     var flData = getObjectFromLocalStorage(localStorageKey.flData);
     var labeledData = getObjectFromLocalStorage(localStorageKey.labeledData);
-    labeledData[key] = flData[key];
-    labeledData[key].label = isLike;
-    delete flData[key];
+    for (var i in flData) {
+        if (flData[i].id == key) {
+            labeledData[key] = flData[i];
+            labeledData[key].label = isLike;
+            // flData.splice(i, 1);
+            break;
+        }
+    }
     setObjectToLocalStorage(localStorageKey.labeledData, labeledData);
-    setObjectToLocalStorage(localStorageKey.flData, flData);
-    $(e.target).parent().remove();
+    // setObjectToLocalStorage(localStorageKey.flData, flData);
+    makePagination();
 }
 
 app.initialize();
