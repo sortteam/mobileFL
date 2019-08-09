@@ -17,21 +17,27 @@
  * under the License.
  */
 
+var flData;
+
 var app = {
     // Application Constructor
     initialize: function () {
         document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
+        flData = localStorage.getItem('flData');
+        if (flData == null || flData == undefined) {
+            flData = new Array();
+            getData();
+        } else {
+            drawList();
+        }
     },
 
     // deviceready Event Handler
     //
     // Bind any cordova events here. Common events are:
     onDeviceReady: function () {
-        getData();
     },
 };
-
-var flData = new Array();
 
 getData = function () {
     var url = 'https://raw.githubusercontent.com/e9t/nsmc/master/ratings_test.txt';
@@ -41,12 +47,30 @@ getData = function () {
         success: function (response) {
             response = response.split('\n');
             response.shift();
+            response = response.splice(0, 100);
             response.forEach(function (line) {
                 line = line.split('\t');
                 flData.push({ id: line[0], document: line[1], label: line[2] });
             });
-            console.log('suc get data');
+            drawList();
         }
+    });
+}
+
+drawList = function () {
+    flData.forEach(function (item) {
+        var liElement = document.createElement("li");
+        var likeBtn = document.createElement("button");
+        var dislikeBtn = document.createElement("button");
+
+        $(liElement).attr("li_iD", item.id);
+        $(liElement).html(item.document);
+        $(likeBtn).html("like");
+        $(dislikeBtn).html("dislike");
+        
+        $(liElement).append(likeBtn);
+        $(liElement).append(dislikeBtn);
+        $("#list").append(liElement);
     });
 }
 
