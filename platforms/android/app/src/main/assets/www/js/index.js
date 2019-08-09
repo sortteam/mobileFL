@@ -17,15 +17,31 @@
  * under the License.
  */
 
-var flData;
+
+var localStorageKey = {
+    flData:'flData',
+    labeledData: 'labeledData'
+}
+
+getObjectFromLocalStorage = function (key) {
+    return  JSON.parse(localStorage.getItem(key));
+}
+
+setObjectToLocalStorage = function (key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
 
 var app = {
     // Application Constructor
     initialize: function () {
         document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
-        flData = localStorage.getItem('flData');
+        var labeledData = getObjectFromLocalStorage(localStorageKey.labeledData);
+        if (labeledData == null || labeledData == undefined) {
+            setObjectToLocalStorage(localStorageKey.labeledData, {});
+        }
+        var flData = getObjectFromLocalStorage(localStorageKey.flData);
         if (flData == null || flData == undefined) {
-            flData = new Array();
+            flData = {};
             getData();
         } else {
             drawList();
@@ -48,30 +64,57 @@ getData = function () {
             response = response.split('\n');
             response.shift();
             response = response.splice(0, 100);
+            var flData = {};
             response.forEach(function (line) {
                 line = line.split('\t');
-                flData.push({ id: line[0], document: line[1], label: line[2] });
+                flData[line[0]] = { document: line[1], label: line[2] };
+                // flData.push({ id: line[0], document: line[1], label: line[2] });
             });
+            setObjectToLocalStorage(localStorageKey.flData, flData);
             drawList();
         }
     });
 }
 
 drawList = function () {
-    flData.forEach(function (item) {
+    var flData = getObjectFromLocalStorage(localStorageKey.flData);
+    for (var key in flData) {
         var liElement = document.createElement("li");
         var likeBtn = document.createElement("button");
         var dislikeBtn = document.createElement("button");
 
-        $(liElement).attr("li_iD", item.id);
-        $(liElement).html(item.document);
+        $(liElement).attr("key", key);
+        $(liElement).html(flData[key].document);
         $(likeBtn).html("like");
+        $(likeBtn).click(clickedLike);
         $(dislikeBtn).html("dislike");
-        
+        $(dislikeBtn).click(clickedDislike);
+
         $(liElement).append(likeBtn);
         $(liElement).append(dislikeBtn);
         $("#list").append(liElement);
-    });
+    }
+}
+
+clickedLike = function (e) {
+    clickedReview(e, 1);
+}
+
+clickedDislike = function (e) {
+    clickedReview(e, 0);
+}
+
+clickedReview = function (e, isLike) {
+    e.preventDefault();
+    var key = $(e.target).parent().attr("key");
+    var flData = getObjectFromLocalStorage(localStorageKey.flData);
+    var labeledData = getObjectFromLocalStorage(localStorageKey.labeledData);
+    labeledData[key] = flData[key];
+    labeledData[key].label = isLike;
+    delete flData[key];
+    setObjectToLocalStorage(localStorageKey.labeledData, labeledData);
+    setObjectToLocalStorage(localStorageKey.flData, flData);
+    $(e.target).parent().remove();
 }
 
 app.initialize();
